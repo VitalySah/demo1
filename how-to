@@ -1,0 +1,14 @@
+This script will check network addresses on your server and will report you lowwest IP used on that network.
+
+How to run this script:
+
+1. Create text file with list IP's which you want to scan. For example name of file will be "list".
+2. Create ssh key under user root with follow command: ssh-keygen -t rsa
+3. Copy new created key to you server by command: for ip in `cat list`; do ssh-copy-id $ip; done
+4. Validate if you can login as root without password: for ip in `cat list`; do ssh $ip hostname ; done. You should get list of hostname of each server.
+5. Be shure that you "list"  file located in same directory with the script.
+6. Be shure that script have executable permissions.
+7. Run the script: ./homework.sh
+
+That's all, folks :)
+
