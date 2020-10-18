@@ -1,17 +1,9 @@
 #!/bin/bash
 
 
-IP_LIST=ip_list
-SUB_LIST=sub_list
 SSH_HOSTS=list
-SORTED_IP=sorted_ip
-
-function clean_old()
-{
-	rm -f $IP_LIST
-	rm -f $SUB_LIST
-	rm -f $SORTED_IP
-}
+RESULT=sorted_ip
+IP_LIST=ip_list
 
 
 function get_ips()
@@ -21,33 +13,31 @@ for i in `cat $SSH_HOSTS`; do ping -c 1 $i 2>&1 > /dev/null ; if [ $? -eq 0 ]; t
 
 }
 
-function sort_ips()
+function sort_list()
 {
-
-for line in $(cat $IP_LIST  | awk -F\. '{print $1"."$2"."$3}'|awk '!x[$0]++');do grep $line $IP_LIST |awk -F\/ '{print $1}'|awk -F\. '{print $line}'|sort -nr|tail -n 1;done > $SORTED_IP
-
+	rm $RESULT
+	touch $RESULT
+        for active_ip in `cat ${1}`
+        do
+	# nd states for network data detemined for a particular IP by usin sipcalc,
+	# e.g. 168098573, 10.4.224.0/19, 10.4.251.13/19
+	nd=($(sipcalc -i ${active_ip} | tr -d " " | egrep -w "Hostaddress\(decimal\)|Networkaddress|Networkmask\(bits\)" | cut -f2 -d"-"))
+	if [ $(grep ${nd[1]} $RESULT | wc -l) -eq 0 ]; then
+	    printf "%s,%s/%s,%s\n" ${nd[0]} ${nd[1]} ${nd[2]} $active_ip >> $RESULT
+	else
+	    existing_ip_decimal=$(grep ${nd[1]} $RESULT | cut -f1 -d",")
+	    if ((${existing_ip_decimal} > ${nd[0]}));then
+		cat $RESULT | grep -v ${existing_ip_decimal} > temp_list
+		mv temp_list $RESULT
+		printf "%s,%s/%s,%s\n" ${nd[0]} ${nd[1]} ${nd[2]} $active_ip >> $RESULT
+	    fi
+	fi
+    done
 }
 
-function get_subnets()
-{
-
-for line in $(cat $IP_LIST  | awk -F\. '{print $1"."$2"."$3}'|awk '!x[$0]++');do grep $line $IP_LIST |awk -F\. '{print $line}'| sed -e 's/\(\([0-9]\{1,3\}\.\)\{3\}\)[0-9]\{1,3\}/\10/g' | sort -nr|tail -n 1;done > $SUB_LIST
-
+function print_result() {
+    cat $RESULT | awk -F \, '{print $2 " - " $3}'
 }
-
-function print_ip()
-{
-
-	sed -e "R $SORTED_IP" $SUB_LIST | sed 'N; s/\n/ -  /'
-
-}
-
-
-#main
-clean_old
-clear
 get_ips
-sort_ips
-get_subnets
-print_ip
-clean_old
+sort_list $IP_LIST
+print_result

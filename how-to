@@ -1,4 +1,6 @@
-This script will check network addresses on your server and will report you lowwest IP used on that network.
+This script will check network addresses on your servers and will report you lowest IP used on that network.
+
+Before to run the script be shure that sipcalc is installed on your system.
 
 How to run this script:
 
